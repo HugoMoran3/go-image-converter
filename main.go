@@ -57,4 +57,27 @@ func main() {
 	}
 	defer inputFile.Close()
 
+	// Decode input image
+	var img image.Image
+	var format string
+
+	// WebP processing
+	if strings.ToLower(filepath.Ext(*inputPath)) == ".webp" {
+		img, format, err = webp.Decode(inputFile)
+		format = "webp"
+	} else {
+		img, format, err = image.Decode(inputFile)
+	}
+	if err != nil {
+		log.Fatalf("Error decoding image: %v", err)
+	}
+
+	// Create the output file
+	outputFile, err := os.Create(*outputPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer outputFile.Close()
+
+
 }
