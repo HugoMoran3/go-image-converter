@@ -2,21 +2,15 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/image/webp"
-	"golang.org/x/image/tiff"
-	"golang.org/x/image/bmp"
-	"github.com/mat/besticon/ico"
-	"github.com/tdewolff/canvas"
 )
 
 var SupportedFormats = map[string]struct{}{
@@ -27,6 +21,12 @@ var SupportedFormats = map[string]struct{}{
 	"tiff": {},
 	"bmp": {},
 	"ico": {},
+}
+
+// Add the missing SVG conversion function
+func convertFromSVG(inputPath, outputPath string, quality, icoSize int) error {
+	// TODO: Implement SVG conversion
+	return nil
 }
 
 func main() {
@@ -57,19 +57,18 @@ func main() {
 	}
 	defer inputFile.Close()
 
-	// Decode input image
-	var img image.Image
-	var format string
-
 	// WebP processing
+	var img image.Image
 	if strings.ToLower(filepath.Ext(*inputPath)) == ".webp" {
-		img, format, err = webp.Decode(inputFile)
-		format = "webp"
+		img, err = webp.Decode(inputFile)
+		if err != nil {
+			log.Fatalf("Error decoding WebP image: %v", err)
+		}
 	} else {
-		img, format, err = image.Decode(inputFile)
-	}
-	if err != nil {
-		log.Fatalf("Error decoding image: %v", err)
+		img, _, err = image.Decode(inputFile)
+		if err != nil {
+			log.Fatalf("Error decoding image: %v", err)
+		}
 	}
 
 	// Create the output file
@@ -79,5 +78,16 @@ func main() {
 	}
 	defer outputFile.Close()
 
-
+	// Add this: Encode the image to the output file
+	switch strings.ToLower(filepath.Ext(*outputPath)) {
+	case ".jpg", ".jpeg":
+		err = jpeg.Encode(outputFile, img, &jpeg.Options{Quality: *quality})
+	case ".png":
+		err = png.Encode(outputFile, img)
+	default:
+		log.Fatal("Unsupported output format")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
 }
