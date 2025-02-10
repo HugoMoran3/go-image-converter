@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hhrutter/tiff"
 	"golang.org/x/image/webp"
 )
 
@@ -22,7 +23,6 @@ var SupportedFormats = map[string]struct{}{
 	"bmp": {},
 	"ico": {},
 }
-
 // Add the missing SVG conversion function
 func convertFromSVG(inputPath, outputPath string, quality, icoSize int) error {
 	// TODO: Implement SVG conversion
@@ -59,10 +59,15 @@ func main() {
 
 	// WebP processing
 	var img image.Image
-	if strings.ToLower(filepath.Ext(*inputPath)) == ".webp" {
+	if ext := strings.ToLower(filepath.Ext(*inputPath)); ext == ".webp" {
 		img, err = webp.Decode(inputFile)
 		if err != nil {
 			log.Fatalf("Error decoding WebP image: %v", err)
+		}
+	} else if ext == ".tiff" || ext == ".tif" {
+		img, err = tiff.Decode(inputFile)
+		if err != nil {
+			log.Fatalf("Error decoding TIFF image: %v", err)
 		}
 	} else {
 		img, _, err = image.Decode(inputFile)
@@ -84,6 +89,10 @@ func main() {
 		err = jpeg.Encode(outputFile, img, &jpeg.Options{Quality: *quality})
 	case ".png":
 		err = png.Encode(outputFile, img)
+	case ".tiff", ".tif":
+		err = tiff.Encode(outputFile, img, &tiff.Options{
+			Compression: tiff.LZW,
+		})
 	default:
 		log.Fatal("Unsupported output format")
 	}
